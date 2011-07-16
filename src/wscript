@@ -1,0 +1,5 @@
+def build(bld):
+  bld(features = 'cxx cprogram',
+      source = 'godec.cpp',
+      target = 'godec',
+      includes = ['.'])

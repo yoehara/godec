@@ -3,6 +3,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stbi/stb_image_write.c"
 #include <eigen3/Eigen/Dense>
+#include "cmdline.h"
 //#include "ye/data.hpp"
 typedef double val_t;
 using namespace std;

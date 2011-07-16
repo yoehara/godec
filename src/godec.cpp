@@ -4,11 +4,10 @@
 #include "stbi/stb_image_write.c"
 #include <eigen3/Eigen/Dense>
 #include "cmdline.h"
-//#include "ye/data.hpp"
 typedef double val_t;
 using namespace std;
 
-const char* FILE_NAME     = "/home/ehara/mypic.png";
+const char* FILE_NAME=NULL;//     = "/home/ehara/mypic.png";
 //const char* FILE_NAME     = "/home/ehara/akb48_2.png";
 const char* X_FILE_NAME = "X.png";
 const char* L_FILE_NAME = "L.png";
@@ -81,37 +80,34 @@ class GoDec{
   public:
   GoDec(){}
 
-/*  template <class Mat>
-  GoDec(Mat& A){
-    int r = (A.rows() < A.cols()) ? A.rows() : A.cols();
-    run(A, r);
-  }*/
 
-  //template <class Mat>
   GoDec(const emat_t& X, const int r, const int k, const val_t eps ):L_t(X.rows(), X.cols()), S_t(X.rows(), X.cols()){
     run(X, r, k, eps);
   }
 
-  void run(const emat_t& X, const int r, const int k, const val_t eps ){
-    int loop= 0; val_t norm_rate = 0.0;
+  void run(const emat_t& X, const int r, const int k, const val_t eps , bool autoconverge=true ){
+    int loop= 0; val_t norm_rate = 0.0; val_t prevnorm = -1.0; val_t nownorm= 0.0;
     val_t xnorm = X.norm();
     L_t = X;
-    S_t; S_t.setZero(X.rows(), X.cols());// = Eigen::Zeros(X.rows(), X.cols());
+    S_t; S_t.setZero(X.rows(), X.cols());
     do{
-    Eigen::JacobiSVD<emat_t> svd(X-S_t, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    auto sigmas = svd.singularValues();
-    for(int i=r; i< sigmas.size();++i)sigmas[i]=0;
-    L_t = svd.matrixU()*sigmas.asDiagonal()*svd.matrixV().transpose();
+      Eigen::JacobiSVD<emat_t> svd(X-S_t, Eigen::ComputeThinU | Eigen::ComputeThinV);
+      auto sigmas = svd.singularValues();
+      for(int i=r; i< sigmas.size();++i)sigmas[i]=0;
+      L_t = svd.matrixU()*sigmas.asDiagonal()*svd.matrixV().transpose();
 
-    S_t.setZero(X.rows(), X.cols());
-    select_kbest(S_t, X-L_t, k, Abs());
-    cout << "S norm: " << S_t.norm() << endl;
-//    cout << S_t << endl;
+      S_t.setZero(X.rows(), X.cols());
+      select_kbest(S_t, X-L_t, k, Abs());
+      cout << "S norm: " << S_t.norm() << endl;
 
-    norm_rate = (X-L_t-S_t).norm()/xnorm;
-    cout << loop++ << ": " << norm_rate << "=" << (X-L_t-S_t).norm() << "/" << xnorm <<   endl;
-    
-    }while(norm_rate > eps);
+      prevnorm = nownorm;
+      nownorm   = (X-L_t-S_t).norm();
+      norm_rate = nownorm/xnorm;
+      cout << loop++ << ": " << norm_rate << "=" << nownorm << "/" << xnorm <<   endl;
+      cout << prevnorm << ", " << nownorm << " " << (prevnorm-nownorm) << endl;
+      
+    }while( !(autoconverge && abs(prevnorm-nownorm)<0.001));
+  //norm_rate > eps &&
   }
   
   template<class F>
@@ -138,58 +134,6 @@ class GoDec{
     }
   }
   
-/*  template <class Mat>
-  void run(Mat& A, const int rank){
-    if (A.cols() == 0 || A.rows() == 0) return;
-    int r = (rank < A.cols()) ? rank : A.cols();
-    r = (r < A.rows()) ? r : A.rows();
-    
-    // Gaussian Random Matrix for A^T
-    Eigen::MatrixXf O(A.rows(), r);
-    sampleGaussianMat(O);
-    
-    // Compute Sample Matrix of A^T
-    Eigen::MatrixXf Y = A.transpose() * O;
-    
-    // Orthonormalize Y
-    processGramSchmidt(Y);
-
-    // Range(B) = Range(A^T)
-    Eigen::MatrixXf B = A * Y;
-    
-    // Gaussian Random Matrix
-    Eigen::MatrixXf P(B.cols(), r);
-    sampleGaussianMat(P);
-    
-    // Compute Sample Matrix of B
-    Eigen::MatrixXf Z = B * P;
-    
-    // Orthonormalize Z
-    processGramSchmidt(Z);
-    
-    // Range(C) = Range(B)
-    Eigen::MatrixXf C = Z.transpose() * B; 
-    
-    Eigen::JacobiSVD<Eigen::MatrixXf> svdOfC(C, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    
-    // C = USV^T
-    // A = Z * U * S * V^T * Y^T()
-    matU_ = Z * svdOfC.matrixU();
-    matS_ = svdOfC.singularValues();
-    matV_ = Y * svdOfC.matrixV();
-  }
-  
-  const Eigen::MatrixXf& matrixU() const {
-    return matU_;
-  }*/
-
-/*  const Eigen::VectorXf& singularValues() const {
-    return matS_;
-  }
-
-  const Eigen::MatrixXf& matrixV() const {
-    return matV_;
-  }*/
 
   const emat_t& matrixL() const{
     return L_t;
@@ -243,7 +187,7 @@ void eigentest(){
 }
 
 
-void godectest(){
+void godectest(int svdr, int rdiff){
     unsigned char* pixels ;
     int width;
     int height;
@@ -271,8 +215,8 @@ void godectest(){
 //    histogram(a);
 
     int rank = (height   < width   ) ? height  : width;
-    int rdiff = 2;
-    int svdr = 10;
+//    int rdiff = 2;
+ //   int svdr = 10;
     //
     //To compare with usual SVD, k is set so that GoDec has the same memory usage with SVD.
     //width+height+1 = # of elem.s in 1 column in both U and V + 1 for singular value.
@@ -345,9 +289,27 @@ void godectest(){
  */
 int main (int argc, char** argv) 
 {
+  cmdline::parser a;
+  a.add<int>("rank", 'r', "rank of svd", false, 10);
+  a.add<int>("kdiff", 'k', "cardinality k = ndiff*(height+width+1)", false, 2);
+  a.add("help", 0, "print this message");
+  a.footer("filename ...");
+  bool ok=a.parse(argc, argv);
+
+  if (argc==1 ||  a.exist("help")){
+    cerr<<a.usage();
+    return 0;
+  }
+  
+  if (!ok){
+    cerr<<a.error()<<endl<<a.usage();
+    return 0;
+  }
+  
+  FILE_NAME = a.rest()[0].c_str();
 
 //    eigentest();
-  godectest();
+  godectest(a.get<int>("rank"), a.get<int>("kdiff"));
 
 
     return 0;

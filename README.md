@@ -6,6 +6,7 @@ http://www.icml-2011.org/papers/41_icmlpaper.pdf
 
 ##Build
 Uses c++0x features. May require gcc 4.6.0 or higher to build.
+
 ```
 git clone git@github.com:niam/godec.git
 cd godec

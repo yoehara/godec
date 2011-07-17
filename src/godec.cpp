@@ -43,7 +43,7 @@ void pixel2mat(int width, int height, int bpp,  const unsigned char * pixels, T&
 }
 
 template<class T>
-void mat2pixel(int width, int height, int bpp,   unsigned char * pixels, const T& mat, double range=1.0, unsigned char shift = 0){
+void mat2pixel(int width, int height, int bpp,   unsigned char * pixels, const T& mat,  double range=1.0, unsigned char shift = 0, bool isclip=true){
 //    mat.resize(height, width);
     for(int i=0;i<height;++i){
       for(int j=0;j<width;++j){
@@ -51,8 +51,10 @@ void mat2pixel(int width, int height, int bpp,   unsigned char * pixels, const T
         char val = mat(i,j);
 //        if( mat(i,j)>255.0) cout << "overflow" << endl;
  //       if( mat(i,j)<0.0) cout << "underflow" << endl;
-        if(mat(i,j)>255.0) val = 255;
-        if(mat(i,j)<0) val = 0;
+        if(isclip){
+          if(mat(i,j)>255.0) val = 255;
+          if(mat(i,j)<0) val = 0;
+        }
         for(int k=0;k<bpp;++k)  pixels[id+k] = (unsigned char)val*range+shift;
       }
     }
@@ -76,16 +78,16 @@ struct Abs : unary_function<val_t, val_t>{
 };
 
 
-class GoDec{
+class godec_t{
   public:
-  GoDec(){}
+  godec_t(){}
 
 
-  GoDec(const emat_t& X, const int r, const int k, const val_t eps ):L_t(X.rows(), X.cols()), S_t(X.rows(), X.cols()){
-    run(X, r, k, eps);
+  godec_t(const emat_t& X, const int r, const int k, const val_t eps2 ):L_t(X.rows(), X.cols()), S_t(X.rows(), X.cols()){
+    run(X, r, k, eps2);
   }
 
-  void run(const emat_t& X, const int r, const int k, const val_t eps , bool autoconverge=true ){
+  void run(const emat_t& X, const int r, const int k, const val_t eps2 , bool autoconverge=true ){
     int loop= 0; val_t norm_rate = 0.0; val_t prevnorm = -1.0; val_t nownorm= 0.0;
     val_t xnorm = X.norm();
     L_t = X;
@@ -106,7 +108,7 @@ class GoDec{
       cout << loop++ << ": " << norm_rate << "=" << nownorm << "/" << xnorm <<   endl;
       cout << prevnorm << ", " << nownorm << " " << (prevnorm-nownorm) << endl;
       
-    }while( !(autoconverge && abs(prevnorm-nownorm)<0.001));
+    }while( !(autoconverge && abs(prevnorm-nownorm)<eps2));
   //norm_rate > eps &&
   }
   
@@ -187,7 +189,8 @@ void eigentest(){
 }
 
 
-void godectest(int svdr, int rdiff){
+
+void godectest(int svdr, int k, val_t eps2, bool svdcomparemode,  int rdiff, float range, int shift , bool isclip){
     unsigned char* pixels ;
     int width;
     int height;
@@ -206,76 +209,82 @@ void godectest(int svdr, int rdiff){
     cout << "height    = " << height        << "\n";
     cout << "bpp       = " << bpp           << "\n";
 
+    cout << "rank      = " << svdr          << "\n";
+    cout << "card      = " << k             << "\n";
+    cout << "eps       = " << eps2          << "\n";
+    cout << "comparesvd= " << svdcomparemode<< "\n";
+    cout << "rdiff     = " << rdiff         << "\n";
+    cout << "range     = " << range         << "\n";
+    cout << "shift     = " << shift         << "\n";
+    cout << "isclip    = " << isclip        << "\n";
+
     grayscale( width, height, bpp, pixels);//, 0.5, 64);
 //    addspotnoize(width, height, bpp, pixels, 80, 60, 5, 255);
     emat_t  X;
     pixel2mat(width, height,  bpp,  pixels, X);
- //   Eigen::ArrayXXf a = m;
-//    cout << (a>0).count() << endl;
-//    histogram(a);
 
     int rank = (height   < width   ) ? height  : width;
-//    int rdiff = 2;
- //   int svdr = 10;
-    //
-    //To compare with usual SVD, k is set so that GoDec has the same memory usage with SVD.
+    int godecr = -1;
+    if(svdcomparemode){
+    //To compare with usual SVD, k is set so that godec_t has the same memory usage with SVD.
     //width+height+1 = # of elem.s in 1 column in both U and V + 1 for singular value.
-    int k    = rdiff*(width+height+1);
-    int godecr = svdr - rdiff;
+       k    = rdiff*(width+height+1);
+       godecr = svdr - rdiff;
+    }else{
+      godecr = svdr;
+    }
 
-//    GoDec godec(X, godecr, k, 0.378);
-    GoDec godec(X, godecr, k, 0.1294);
+    godec_t godec(X, godecr, k, eps2);
     emat_t L = godec.matrixL();
 
     unsigned char pixelsL[height*width*bpp];
     for(int i=0;i<height*width*bpp;++i)pixelsL[i]=0;
-    mat2pixel(width, height,  bpp,  pixelsL, L, 0.5, 64);
+    mat2pixel(width, height,  bpp,  pixelsL, L, range, shift, isclip);
     cout << "||X-L||= " << (X-L).norm() << endl;
     cout << "writing L...\n";
     ret = stbi_write_png (L_FILE_NAME, width, height, bpp, pixelsL, width*bpp);
-
     cout << "Succeeded in writing?: " << ret << "\n";
 
     emat_t S = godec.matrixS();
     unsigned char pixelsS[height*width*bpp];
     for(int i=0;i<height*width*bpp;++i)pixelsS[i]=0;
-    mat2pixel(width, height,  bpp,  pixelsS, S, 0.5, 64);
+    mat2pixel(width, height,  bpp,  pixelsS, S, range, shift, isclip);
     cout << "||X-S||= " << (X-S).norm() << endl;
     cout << "writing S...\n";
     ret = stbi_write_png (S_FILE_NAME, width, height, bpp, pixelsS, width*bpp);
     cout << "Succeeded in writing?: " << ret << "\n";
 
 
-//    emat_t LpS = L + S;
     unsigned char pixelsLpS[height*width*bpp];
     for(int i=0;i<height*width*bpp;++i)pixelsLpS[i]=0;
-    mat2pixel(width, height,  bpp,  pixelsLpS, L+S, 0.5, 64);
+    mat2pixel(width, height,  bpp,  pixelsLpS, L+S, range, shift, isclip);
     cout << "||X-LpS||= " << (X-(L+S)).norm() << endl;
     cout << "writing LpS...\n";
     ret = stbi_write_png (LpS_FILE_NAME, width, height, bpp, pixelsLpS, width*bpp);
     cout << "Succeeded in writing?: " << ret << "\n";
 
 
-    Eigen::JacobiSVD<emat_t> svd(
-      X, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    auto sigmas =  svd.singularValues();
-//    cout << "rank: " << sigmas.size() << endl;*/
-    for(int k=svdr; k< sigmas.size();++k)sigmas[k]=0;
-    emat_t compared  = svd.matrixU()*sigmas.asDiagonal()*svd.matrixV().transpose();
+    if(svdcomparemode){
+      Eigen::JacobiSVD<emat_t> svd(
+        X, Eigen::ComputeThinU | Eigen::ComputeThinV);
+      auto sigmas =  svd.singularValues();
+      for(int k=svdr; k< sigmas.size();++k)sigmas[k]=0;
+      emat_t compared  = svd.matrixU()*sigmas.asDiagonal()*svd.matrixV().transpose();
 //    cout << "Simple r-rank SVD achives: ||X-X~||=" << (X-compared).norm() << endl;
 
-    unsigned char pixelssvd[height*width*bpp];
-    for(int i=0;i<height*width*bpp;++i)pixelssvd[i]=0;
-    mat2pixel(width, height,  bpp,  pixelssvd, compared, 0.5, 64);
-    cout << "||X-svd||= " << (X-compared).norm() << endl;
-    cout << "writing svd...\n";
-    ret = stbi_write_png (SVD_FILE_NAME, width, height, bpp, pixelssvd, width*bpp);
-    cout << "Succeeded in writing?: " << ret << "\n";
+      unsigned char pixelssvd[height*width*bpp];
+      for(int i=0;i<height*width*bpp;++i)pixelssvd[i]=0;
+      mat2pixel(width, height,  bpp,  pixelssvd, compared, range, shift, isclip);
+      cout << "||X-svd||= " << (X-compared).norm() << endl;
+      cout << "writing svd...\n";
+      ret = stbi_write_png (SVD_FILE_NAME, width, height, bpp, pixelssvd, width*bpp);
+      cout << "Succeeded in writing?: " << ret << "\n";
+     }
     
 
     unsigned char pixelsX[height*width*bpp];
     for(int i=0;i<height*width*bpp;++i)pixelsX[i]=0;
-    mat2pixel(width, height,  bpp,  pixelsX, X , 0.5, 64);
+    mat2pixel(width, height,  bpp,  pixelsX, X , range, shift, isclip);
     cout << "writing X...\n";
     ret = stbi_write_png (X_FILE_NAME, width, height, bpp, pixelsX, width*bpp);
     cout << "Succeeded in writing?: " << ret << "\n";
@@ -290,8 +299,14 @@ void godectest(int svdr, int rdiff){
 int main (int argc, char** argv) 
 {
   cmdline::parser a;
-  a.add<int>("rank", 'r', "rank of svd", false, 10);
-  a.add<int>("kdiff", 'k', "cardinality k = ndiff*(height+width+1)", false, 2);
+  a.add<int>("rank", 'r', "rank r.", false, 10);
+  a.add<int>("cardinality", 'k', "cardinality k.", false, 1000);
+  a.add<float>("eps", 'e', "iteration terminates until |previous error - current error|<eps", false, 0.1);
+  a.add<bool>("comparesvdmode", 0, "comparison with svd in the same degree of freedom.", false, false);
+  a.add<int>("rdiff", 0, "# of ranks used for cardinality k in comparesvdmode. The cardinality k is automatically tuned to rdiff*(height+width+1) so that it has the same degree of freedom with svd.", false, 2);
+  a.add<float>("range", 0, "output changed to shift ... 255*range + shift color", false, 1.0);
+  a.add<int>("shift", 0, "output changed to shift ... 255*range + shift color", false, 0);
+  a.add<bool>("isclip", 0, ">255, <0 values in a matrix are clipped to 255, 0, respectively.", false, true);
   a.add("help", 0, "print this message");
   a.footer("filename ...");
   bool ok=a.parse(argc, argv);
@@ -309,8 +324,7 @@ int main (int argc, char** argv)
   FILE_NAME = a.rest()[0].c_str();
 
 //    eigentest();
-  godectest(a.get<int>("rank"), a.get<int>("kdiff"));
-
+    godectest(a.get<int>("rank"), a.get<int>("cardinality"), a.get<float>("eps"),a.get<bool>("comparesvdmode"), a.get<int>("rdiff"), a.get<float>("range"), a.get<int>("shift"), a.get<bool>("isclip") );
 
     return 0;
 }

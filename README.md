@@ -30,6 +30,6 @@ Everything else other than this library is under New BSD License.
 I implemented for research use. I do NOT know patent issues on GoDec. I have never investigated them. Beaware with patent issues for commercial use.
 
 ##References
- - http://code.google.com/p/oll/
-
+ - http://www.icml-2011.org/papers/41_icmlpaper.pdf
+ - http://nothings.org/
 

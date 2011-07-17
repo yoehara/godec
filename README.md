@@ -6,6 +6,8 @@ http://www.icml-2011.org/papers/41_icmlpaper.pdf
 
 ##Build
 Uses c++0x features. May require gcc 4.6.0 or higher to build.
+Eigen 3.0.1 (http://eigen.tuxfamily.org/) or higher is required.  (Maybe work with Eigen 3.0.0 but not checked.)
+
 
 ```
 git clone git@github.com:niam/godec.git
@@ -34,4 +36,5 @@ I implemented for research use. I do NOT know patent issues on GoDec. I have nev
 ##References
  - http://www.icml-2011.org/papers/41_icmlpaper.pdf
  - http://nothings.org/
+ - http://eigen.tuxfamily.org/
 

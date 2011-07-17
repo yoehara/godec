@@ -277,11 +277,11 @@ int main (int argc, char** argv)
   a.add<int>("rank", 'r', "rank r.", false, 10);
   a.add<int>("cardinality", 'k', "cardinality k.", false, 1000);
   a.add<float>("eps", 'e', "iteration terminates until |previous error - current error|<eps", false, 0.1);
-  a.add<bool>("comparesvdmode", 0, "comparison with svd in the same degree of freedom.", false, false);
+  a.add("comparesvdmode", 0, "compares with svd in the same degree of freedom when set.");
   a.add<int>("rdiff", 0, "# of ranks used for cardinality k in comparesvdmode. The cardinality k is automatically tuned to rdiff*(height+width+1) so that it has the same degree of freedom with svd.", false, 2);
   a.add<float>("range", 0, "output changed to shift ... 255*range + shift color", false, 1.0);
   a.add<int>("shift", 0, "output changed to shift ... 255*range + shift color", false, 0);
-  a.add<bool>("isclip", 0, ">255, <0 values in a matrix are clipped to 255, 0, respectively.", false, true);
+  a.add("noclip", 0, "disables clipping. usually, >255, <0 values in a matrix are clipped to 255, 0, respectively.");
   a.add("help", 0, "print this message");
   a.footer("filename ...");
   bool ok=a.parse(argc, argv);
@@ -298,7 +298,7 @@ int main (int argc, char** argv)
   
   FILE_NAME = a.rest()[0].c_str();
 
-    godectest(a.get<int>("rank"), a.get<int>("cardinality"), a.get<float>("eps"),a.get<bool>("comparesvdmode"), a.get<int>("rdiff"), a.get<float>("range"), a.get<int>("shift"), a.get<bool>("isclip") );
+    godectest(a.get<int>("rank"), a.get<int>("cardinality"), a.get<float>("eps"),a.exist("comparesvdmode"), a.get<int>("rdiff"), a.get<float>("range"), a.get<int>("shift"), !a.exist("noclip") );
 
     return 0;
 }

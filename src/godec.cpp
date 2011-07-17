@@ -1,14 +1,32 @@
+/* 
+ *  Copyright (c) 2011 Yo Ehara
+ * 
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions
+ *   are met:
+ * 
+ *   1. Redistributions of source code must retain the above Copyright
+ *      notice, this list of conditions and the following disclaimer.
+ *
+ *   2. Redistributions in binary form must reproduce the above Copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ *   3. Neither the name of the authors nor the names of its contributors
+ *      may be used to endorse or promote products derived from this
+ *      software without specific prior written permission.
+ */
+
 #include <iostream>
 #include "stbi/stb_image.c"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stbi/stb_image_write.c"
 #include <eigen3/Eigen/Dense>
 #include "cmdline.h"
-typedef double val_t;
+typedef float  val_t;
 using namespace std;
 
-const char* FILE_NAME=NULL;//     = "/home/ehara/mypic.png";
-//const char* FILE_NAME     = "/home/ehara/akb48_2.png";
+const char* FILE_NAME=NULL;
 const char* X_FILE_NAME = "X.png";
 const char* L_FILE_NAME = "L.png";
 const char* S_FILE_NAME = "S.png";
@@ -148,46 +166,6 @@ private:
   emat_t S_t;
 };
 
-template <class T>
-void histogram(const T& m){
-  int prev= 0;
-  for(int i=0;i<=255;++i){
-    int ct = (m<=i).count();
-    cout << "# of " << i << ": " << ct-prev <<  endl;
-    prev=ct;
-  }
-  
-}
-
-
-void eigentest(){
-   Eigen::Matrix<val_t, Eigen::Dynamic, Eigen::Dynamic,  Eigen::RowMajor> m (2,3);
-   m << 0.3, 0.5, 0.1,
-        0.6, 0.2, 0.4;
-  auto data = m.data();
-  for(int i=0;i<m.size();++i){
-    cout << data[i] << endl;
-  }
-  
-  vector<val_t> v;
-  vector<pair<int, val_t>> v2;
-  copy(data, data+6, back_inserter(v));
-  { int i=0;
-    transform(data, data+6, back_inserter(v2), [&i](val_t datum){return make_pair(i++, datum);});
-  }
-  partial_sort(v2.begin(), v2.begin()+3, v2.end(), [](const pair<int, val_t>& p1, const pair<int, val_t>& p2){return p1.second<p2.second;});
-/*  for(auto val : v){
-    cout << val << endl;
-  }
-  partial_sort(data, data+3, data+m.size());
-  cout << m << endl;*/
-  for(auto val : v2){
-    cout << val.first << "," << val.second << endl;
-  }
-
-
-}
-
 
 
 void godectest(int svdr, int k, val_t eps2, bool svdcomparemode,  int rdiff, float range, int shift , bool isclip){
@@ -293,9 +271,6 @@ void godectest(int svdr, int k, val_t eps2, bool svdcomparemode,  int rdiff, flo
 }
 
 
-/**
- *
- */
 int main (int argc, char** argv) 
 {
   cmdline::parser a;
@@ -323,7 +298,6 @@ int main (int argc, char** argv)
   
   FILE_NAME = a.rest()[0].c_str();
 
-//    eigentest();
     godectest(a.get<int>("rank"), a.get<int>("cardinality"), a.get<float>("eps"),a.get<bool>("comparesvdmode"), a.get<int>("rdiff"), a.get<float>("range"), a.get<int>("shift"), a.get<bool>("isclip") );
 
     return 0;

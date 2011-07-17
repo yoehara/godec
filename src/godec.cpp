@@ -258,7 +258,6 @@ void godectest(int svdr, int k, val_t eps2, bool svdcomparemode,  int rdiff, flo
       ret = stbi_write_png (SVD_FILE_NAME, width, height, bpp, pixelssvd, width*bpp);
       cout << "Succeeded in writing?: " << ret << "\n";
      }
-    
 
     unsigned char pixelsX[height*width*bpp];
     for(int i=0;i<height*width*bpp;++i)pixelsX[i]=0;

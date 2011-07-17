@@ -9,8 +9,8 @@ def options(ctx):
                                                                                                           
 def configure(ctx):
   ctx.check_tool('compiler_cxx')
-#  ctx.env.append_value('std', ['c++0x'])
-  ctx.env.CXXFLAGS += ['-O2',   '-DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET']
+  ctx.env.append_value('std', ['c++0x'])
+  ctx.env.CXXFLAGS += ['-O2', '-std=c++0x', '-Wno-c++0x-compat',  '-DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET']
 #'-Wall', '-W', '-Wno-c++0x-compat', 
 
 def build(bld):

@@ -18,10 +18,10 @@ cd godec
 build/src/godec -r 10 -k 100 hogehoge.png
 ```
 This creates L.png, S.png, X.png, and LpS.png.
-X.png: original image automatically grayscaled.
-L.png: L in GoDec.
-S.png: S in GoDec.
-LpS.png: L+S in GoDec.
+ - X.png: original image automatically grayscaled.
+ - L.png: L in GoDec.
+ - S.png: S in GoDec.
+ - LpS.png: L+S in GoDec.
 
 ##License
 I used stb_image.c and stb_image_write.c, an image library claimed to be public domain.

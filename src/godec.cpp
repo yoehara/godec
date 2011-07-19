@@ -126,6 +126,8 @@ class godec_t{
       cout << loop++ << ": " << norm_rate << "=" << nownorm << "/" << xnorm <<   endl;
       cout << prevnorm << ", " << nownorm << " " << (prevnorm-nownorm) << endl;
       
+    //convergence detection is changed from norm_rate > eps as in the paper
+    //to the following to avoid infinite looping when norm_rate at the local minimum  > eps.
     }while( !(autoconverge && abs(prevnorm-nownorm)<eps2));
   //norm_rate > eps &&
   }
@@ -142,15 +144,11 @@ class godec_t{
     s.setZero(m.rows(), m.cols());
     for( auto it = v.begin(); it!=v.begin()+k; ++it){
       const auto& datum = *it;
-      if(datum.second==0.0){
-       cout << "called!!!" << endl;
-      continue;
-      }
-      //Assume column first
+      //Assumes m is column major
       int col =  datum.first/m.rows();
       int row =  datum.first%m.rows();
 //      cout << "(" << row << "," << col << ")" << endl;
-      s(row, col) = datum.second;  
+      if(datum.second!=0.0) s(row, col) = datum.second;  
     }
   }
   
